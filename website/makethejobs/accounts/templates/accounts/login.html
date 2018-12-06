@@ -1,0 +1,15 @@
+
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+    <title>Makethejobs - Login</title>
+{% endblock %}
+{% block body %}
+    <h1 class="mb-4">Login</h1>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Login</button>
+    </form>
+{% endblock %}
