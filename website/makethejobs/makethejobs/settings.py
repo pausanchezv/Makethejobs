@@ -69,14 +69,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'makethejobs.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'makethejobs',
+        'USER': 'root',
+        'PASSWORD': 'iwimd546',
+        'HOST': '',
+        'PORT': '',
+        'TEST': {
+            'CHARSET': 'UTF8',
+        },
     }
 }
 
