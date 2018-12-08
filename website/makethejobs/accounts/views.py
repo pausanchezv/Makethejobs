@@ -1,17 +1,8 @@
-from django.contrib.auth.forms import AuthenticationForm
-from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseRedirect
+from django.contrib.auth import authenticate, login, logout
+from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.views import View
-from django.views.generic import FormView
-
+from django.views.generic import FormView, RedirectView
 from accounts.forms import LoginForm
-
-
-def home(request):
-    #return HttpResponse("Hello, world. You're at the makethejobs index.")
-
-    return render(request, 'accounts/login.html')
 
 
 class Login(FormView):
@@ -19,10 +10,55 @@ class Login(FormView):
 
     template_name = 'accounts/login.html'
     form_class = LoginForm
-    success_url = 'accounts:home'
+    success_url = 'profiles:userhome'
+    error_url = 'accounts:login'
+
+    def _login(self, data):
+        """
+        Login with email
+        :param data:
+        :return: Response Redirect
+        """
+
+        email = data.get('email', '')
+        password = data.get('password', '')
+
+        user = authenticate(username=email, password=password)
+
+        if user is not None and user.is_active:
+            login(self.request, user)
+            return HttpResponseRedirect(reverse(Login.success_url))
+
+        return HttpResponseRedirect(reverse(Login.error_url) + '?errors=does-not-exist')
 
     def form_valid(self, form):
-        return HttpResponseRedirect(reverse(Login.success_url))
+        """
+        Actions when the form has been successfully filled
+        :param form: login form
+        :return: Response redirect from _login function
+        """
+        return self._login(form.cleaned_data)
 
     def form_invalid(self, form):
-        a=2
+        """
+        Actions when the form has been unsuccessfully filled
+        :param form: login form
+        :return: Response Redirect with errors
+        """
+        return HttpResponseRedirect(reverse(Login.error_url) + '?errors=form-error')
+
+
+class Logout(RedirectView):
+    """
+    Provides users the ability to logout
+    """
+    url = '/accounts/login/'
+
+    def get(self, request, *args, **kwargs):
+        """
+        Get method for RedirectView Class
+        :param request:
+        :return: Super call
+        """
+        logout(request)
+        return super(Logout, self).get(request, *args, **kwargs)
