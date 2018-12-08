@@ -1,7 +1,9 @@
 from django.shortcuts import render
+from django.views import View
 
 
+class UserHome(View):
 
-def home(request):
+    def get(self, request, *args, **kwargs):
 
-    return render(request, 'profiles/userhome.html')
+        return render(request, 'profiles/userhome.html')

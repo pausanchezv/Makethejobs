@@ -19,8 +19,8 @@ from django.urls import path, include
 import views
 
 urlpatterns = [
-    path('accounts/', include(('accounts.urls', 'accounts'), namespace='accounts')),
     path('profiles/', include(('profiles.urls', 'profiles'), namespace='profiles')),
+    path('accounts/', include(('accounts.urls', 'accounts'), namespace='accounts')),
     path('admin/', admin.site.urls),
     path('', views.base_redirect, name='base_redirect'),
 ]
