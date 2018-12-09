@@ -1,7 +1,11 @@
+import random
+import string
+
 from django.contrib.auth import authenticate, login, logout
 from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
 from django.core.validators import validate_email
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import render
 from django.urls import reverse
 from django.views import View
@@ -114,7 +118,7 @@ class Login(CustomAuth):
 
     def post(self, request, *args, **kwargs):
         """
-        The register is being done when accessing via POST
+        The use is logged in when accessing via POST
         """
         context = {}
 
@@ -236,22 +240,26 @@ class ChangePassword(CustomAuth):
 
     def post(self, request, *args, **kwargs):
         """
-        The register is being done when accessing via POST
+        The password is changed when accessing via POST
         """
         context = {}
 
         # Checking the current password
         raw_password = self.request.POST.get('password0', '')
 
+        # Checking whether the password has length
         if len(raw_password.strip()) < 1:
             context['error_password0'] = 'Password cannot be empty'
 
         else:
 
+            # Checking current password
             user = authenticate(username=self.request.user.username, password=raw_password)
 
+            # Actions id the password is ok
             if user is not None:
 
+                # New password validation
                 raw_password = super().check_password(
                     self.request.POST.get('password1', ''),
                     self.request.POST.get('password2', ''),
@@ -268,5 +276,148 @@ class ChangePassword(CustomAuth):
                 context['error_password0'] = 'Incorrect current password'
 
         return render(self.request, ChangePassword.template_name, context)
+
+
+class ResetPassword(CustomAuth):
+    """ Custom ChangePassword Class"""
+
+    template_name = 'accounts/reset_password.html'
+    success_url = 'accounts:login'
+    TOKEN_LENGTH = 16
+
+    def get(self, request, *args, **kwargs):
+        """
+        Receiving tokens via GET
+        """
+
+        # Get tokens
+        try:
+            needle = int(self.request.GET.get('needle', '')[::-1])
+        except ValueError:
+            return HttpResponseNotFound('<h1>Page not found</h1>')
+
+        label = self.request.GET.get('label', '')[::-1]
+        key = self.request.GET.get('key', '')[::-1]
+        public_token = self.request.GET.get('public_token', '')
+
+        # Not found is the are token errors
+        if len(public_token) != ResetPassword.TOKEN_LENGTH or not key:
+            return HttpResponseNotFound('<h1>Page not found</h1>')
+
+        # Checking valid user
+        try:
+            User.objects.get(pk=needle, username=label)
+        except User.DoesNotExist:
+            return HttpResponseNotFound('<h1>Page not found</h1>')
+
+        return render(self.request, ResetPassword.template_name)
+
+    def post(self, request, *args, **kwargs):
+        """
+        Reset password via POST
+        """
+        context = {}
+
+        # Checking the password
+        raw_password = super().check_password(
+            self.request.POST.get('password1', ''),
+            self.request.POST.get('password2', ''),
+            context
+        )
+
+        # New password validation
+        if raw_password:
+
+            reversed_key = self.request.POST.get('key', '')
+
+            try:
+                user = User.objects.get(email=reversed_key[::-1])
+
+            except User.DoesNotExist:
+                return HttpResponseNotFound('<h1>Page not found</h1>')
+
+            else:
+                user.set_password(raw_password)
+                user.save()
+                return HttpResponseRedirect(reverse(ResetPassword.success_url) + '?password-changed=1')
+
+        # Always not found by default
+        return render(self.request, ResetPassword.template_name, context)
+
+
+class ForgottenPassword(CustomAuth):
+    """ Custom ChangePassword Class"""
+
+    template_name = 'accounts/forgotten_password.html'
+    success_url = 'accounts:login'
+    TOKEN_LENGTH = 16
+
+    def get(self, request, *args, **kwargs):
+        """
+        Return template render when accessing via GET
+        """
+        return render(self.request, ForgottenPassword.template_name)
+
+    def post(self, request, *args, **kwargs):
+        """
+        Sending the tokenized link
+        """
+        context = {}
+
+        # Checking the email
+        email = str(self.request.POST.get('email', '')).strip()
+
+        if email:
+
+            try:
+                user = User.objects.get(email=email)
+
+            except User.DoesNotExist:
+                context['error_email'] = 'This email does not exist'
+
+            else:
+                self.send_password_link(user)
+                return HttpResponseRedirect(reverse(ForgottenPassword.success_url) + '?password-link-sent=1')
+
+        return render(self.request, ForgottenPassword.template_name, context)
+
+    @staticmethod
+    def send_password_link(user):
+        """
+        Prepare and send a tokenized link
+        :param user:
+        :return:
+        """
+        public_token = (''.join(random.choice(string.ascii_letters + string.digits)
+                                for _ in range(ForgottenPassword.TOKEN_LENGTH)))
+
+        key = user.email[::-1]
+        label = user.username[::-1]
+        needle = str(user.pk)[::-1]
+
+        link = reverse('accounts:reset_password') + '?key={}&label={}&needle={}&public_token={}'.format(
+            key, label, needle, public_token
+        )
+
+        send_mail(
+            'Makethejobs password recovery',
+            'Link: {}'.format(link),
+            'info@pausanchezv.com',
+            (user.email,)
+        )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
