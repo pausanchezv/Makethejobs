@@ -1,15 +1,17 @@
 from django import forms
-from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
+
+from accounts.models import User
 
 
 class LoginForm(forms.Form):
     """ Customized Login Form"""
 
-    email = forms.EmailField(label='Email', max_length=25, widget=forms.EmailInput(
-        attrs={"placeholder": 'e.g. vincent@gmail.com'})
+    email = forms.CharField(label='Email / Username', max_length=60, widget=forms.EmailInput(
+        attrs={"placeholder": 'Type your email or username'})
      )
     password = forms.CharField(label='Password', widget=forms.PasswordInput(
-        attrs={"placeholder": 'e.g. asd567asdFG'})
+        attrs={"placeholder": 'Type your password'})
     )
 
     def __init__(self, *args, **kwargs):
@@ -22,4 +24,60 @@ class LoginForm(forms.Form):
             field.widget.attrs['class'] = 'form-control'
 
 
+class RegistrationForm(UserCreationForm):
+    """ Custom Register form """
 
+    username = forms.CharField(label='Username', max_length=25, min_length=2, widget=forms.TextInput(
+        attrs={"placeholder": 'Your username'})
+    )
+
+    '''first_name = forms.CharField(label='First Name', max_length=25, min_length=2, widget=forms.TextInput(
+        attrs={"placeholder": 'Your first name'})
+    )
+
+    last_name = forms.CharField(label='Last Name', max_length=25, min_length=2, widget=forms.TextInput(
+        attrs={"placeholder": 'Your last name'})
+    )'''
+
+    email = forms.CharField(label='Email', max_length=60, widget=forms.EmailInput(
+        attrs={"placeholder": 'Your email'})
+    )
+
+    password1 = forms.CharField(label='Password', min_length=6, widget=forms.PasswordInput(
+        attrs={"placeholder": 'Your password'})
+    )
+
+    password2 = forms.CharField(label='Password Confirmation', min_length=6, widget=forms.PasswordInput(
+        attrs={"placeholder": 'Your password again'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        """
+        Change the default behavior
+        """
+        super(RegistrationForm, self).__init__(*args, **kwargs)
+
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control'
+
+    class Meta:
+        """ Meta Form """
+
+        model = User
+
+        fields = (
+            'username',
+            'email',
+            'password1',
+            'password2'
+        )
+
+    def save(self, commit=True):
+        """ Save new user """
+
+        user = super(RegistrationForm, self).save(commit=False)
+
+        if commit:
+            user.save()
+
+        return user

@@ -2,10 +2,10 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}
-    <title>Makethejobs - Login</title>
+    <title>Makethejobs - Register</title>
 {% endblock %}
 {% block body %}
-    <h1 class="mb-4">Login</h1>
+    <h1 class="mb-4">Register</h1>
     {% if invalid_credentials %}
         {{ invalid_credentials }}
     {% endif %}
@@ -13,6 +13,6 @@
     <form method="post" autocomplete="off" novalidate>
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit">Login</button>
+        <button type="submit">Register</button>
     </form>
 {% endblock %}
