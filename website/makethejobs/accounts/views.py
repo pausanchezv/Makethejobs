@@ -136,26 +136,6 @@ class Login(CustomAuth):
 
         return render(self.request, Login.template_name, context)
 
-    def register(self, username: str, email: str, password: str):
-        """
-        Manual register system
-        :param username: string
-        :param email: string
-        :param password: string
-        :return: Redirect after logging in
-        """
-
-        # Create and save the new user
-        user = User.objects.create(username=username, email=email)
-        user.set_password(password)
-        user.save()
-
-        # Authenticate and log in the user
-        user = authenticate(username=username, password=password)
-        login(self.request, user)
-
-        return HttpResponseRedirect(reverse(Register.success_url))
-
 
 class Register(CustomAuth):
     """ Custom registration """
