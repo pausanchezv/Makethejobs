@@ -1,15 +1,17 @@
 import random
 import string
+from typing import Union
 
 from django.contrib.auth import authenticate, login, logout
 from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
 from django.core.validators import validate_email
 from django.http import HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import render
 from django.urls import reverse
 from django.views import View
 from django.views.generic import RedirectView
+
+from accounts.email_manager import EmailManager
 from accounts.models import User
 
 
@@ -17,7 +19,7 @@ class CustomAuth(View):
     """ Customized Authentication Class """
 
     @staticmethod
-    def check_username(username: str, context: dict):
+    def check_username(username: str, context: dict) -> Union[str, bool]:
         """
         Check whether the username is valid
         :param username: str
@@ -48,7 +50,7 @@ class CustomAuth(View):
         return False
 
     @staticmethod
-    def check_email(email: str, context: dict):
+    def check_email(email: str, context: dict) -> Union[str, bool]:
         """
         Check whether teh email is valid
         :param email: str
@@ -79,7 +81,7 @@ class CustomAuth(View):
         return False
 
     @staticmethod
-    def check_password(password1: str, password2: str, context: dict):
+    def check_password(password1: str, password2: str, context: dict) -> Union[str, bool]:
         """
         Check whether the passwords are ok
         :param password1: str
@@ -95,6 +97,10 @@ class CustomAuth(View):
 
         if len(password1) < 6:
             context['error_password1'] = 'Password should have at least 6 characters'
+            return False
+
+        if len(password2) < 1:
+            context['error_password2'] = 'Password cannot be empty'
             return False
 
         if password1 != password2:
@@ -170,7 +176,7 @@ class Register(CustomAuth):
 
         return render(self.request, Register.template_name, context)
 
-    def register(self, username: str, email: str, password: str):
+    def register(self, username: str, email: str, password: str) -> HttpResponseRedirect:
         """
         Manual register system
         :param username: string
@@ -187,6 +193,9 @@ class Register(CustomAuth):
         # Authenticate and log in the user
         user = authenticate(username=username, password=password)
         login(self.request, user)
+
+        # Register welcome email
+        EmailManager.register_email(user)
 
         return HttpResponseRedirect(reverse(Register.success_url))
 
@@ -355,7 +364,7 @@ class ForgottenPassword(CustomAuth):
         return render(self.request, ForgottenPassword.template_name, context)
 
     @staticmethod
-    def send_password_link(user):
+    def send_password_link(user: User) -> None:
         """
         Prepare and send a tokenized link
         :param user:
@@ -364,17 +373,22 @@ class ForgottenPassword(CustomAuth):
         public_token = (''.join(random.choice(string.ascii_letters + string.digits)
                                 for _ in range(ForgottenPassword.TOKEN_LENGTH)))
 
+        # Adding user token
         user.password_token = public_token
         user.save()
 
+        # Sending the email
         link = reverse('accounts:reset_password') + '?public_token={}'.format(public_token)
+        EmailManager.password_email(user, link)
 
+        '''
         send_mail(
             'Makethejobs password recovery',
             'Link: {}'.format(link),
             'info@pausanchezv.com',
             (user.email,)
         )
+        '''
 
 
 
