@@ -263,31 +263,23 @@ class ResetPassword(CustomAuth):
 
     template_name = 'accounts/reset_password.html'
     success_url = 'accounts:login'
-    TOKEN_LENGTH = 16
+    TOKEN_LENGTH = 32
 
     def get(self, request, *args, **kwargs):
         """
         Receiving tokens via GET
         """
 
-        # Get tokens
-        try:
-            needle = int(self.request.GET.get('needle', '')[::-1])
-        except ValueError:
-            return HttpResponseNotFound('<h1>Page not found</h1>')
-
-        label = self.request.GET.get('label', '')[::-1]
-        key = self.request.GET.get('key', '')[::-1]
         public_token = self.request.GET.get('public_token', '')
 
         # Not found is the are token errors
-        if len(public_token) != ResetPassword.TOKEN_LENGTH or not key:
+        if len(public_token) != ResetPassword.TOKEN_LENGTH:
             return HttpResponseNotFound('<h1>Page not found</h1>')
 
-        # Checking valid user
+        # Get tokens
         try:
-            User.objects.get(pk=needle, username=label)
-        except User.DoesNotExist:
+            User.objects.get(password_token=public_token)
+        except ValueError:
             return HttpResponseNotFound('<h1>Page not found</h1>')
 
         return render(self.request, ResetPassword.template_name)
@@ -308,16 +300,17 @@ class ResetPassword(CustomAuth):
         # New password validation
         if raw_password:
 
-            reversed_key = self.request.POST.get('key', '')
+            password_token = self.request.POST.get('key', '')
 
             try:
-                user = User.objects.get(email=reversed_key[::-1])
+                user = User.objects.get(password_token=password_token)
 
             except User.DoesNotExist:
                 return HttpResponseNotFound('<h1>Page not found</h1>')
 
             else:
                 user.set_password(raw_password)
+                user.password_token = ''
                 user.save()
                 return HttpResponseRedirect(reverse(ResetPassword.success_url) + '?password-changed=1')
 
@@ -330,7 +323,7 @@ class ForgottenPassword(CustomAuth):
 
     template_name = 'accounts/forgotten_password.html'
     success_url = 'accounts:login'
-    TOKEN_LENGTH = 16
+    TOKEN_LENGTH = 32
 
     def get(self, request, *args, **kwargs):
         """
@@ -371,13 +364,10 @@ class ForgottenPassword(CustomAuth):
         public_token = (''.join(random.choice(string.ascii_letters + string.digits)
                                 for _ in range(ForgottenPassword.TOKEN_LENGTH)))
 
-        key = user.email[::-1]
-        label = user.username[::-1]
-        needle = str(user.pk)[::-1]
+        user.password_token = public_token
+        user.save()
 
-        link = reverse('accounts:reset_password') + '?key={}&label={}&needle={}&public_token={}'.format(
-            key, label, needle, public_token
-        )
+        link = reverse('accounts:reset_password') + '?public_token={}'.format(public_token)
 
         send_mail(
             'Makethejobs password recovery',

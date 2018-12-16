@@ -12,6 +12,7 @@ class User(AbstractUser):
     headline = models.CharField('Headline', max_length=100, blank=True, default='')
     company = models.CharField('Company', max_length=100, blank=True, default='')
     area = models.CharField('Area', max_length=50, blank=True, default='')
+    password_token = models.CharField('Forgotten Password Token', max_length=32, blank=True, default='')
 
     def __str__(self):
         """
