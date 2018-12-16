@@ -1,1 +1,2 @@
+#MySql connector python
 Django==2.1.4

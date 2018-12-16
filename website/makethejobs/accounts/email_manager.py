@@ -2,7 +2,7 @@ from django.core.mail import EmailMessage
 from django.template.loader import get_template
 
 from accounts.models import User
-from makethejobs.settings import WEBSITE_EMAILS
+from makethejobs.settings import WEBSITE_EMAILS, EMAIL_SYSTEM_IS_ACTIVE
 
 
 class EmailManager(object):
@@ -34,18 +34,20 @@ class EmailManager(object):
         :return: None
         """
 
-        context = {
-            'user': user,
-        }
+        if EMAIL_SYSTEM_IS_ACTIVE:
 
-        # Preparing the email
-        subject = "Welcome to Makethejobs"
-        to = [user.email]
-        from_email = WEBSITE_EMAILS['general']
-        message = get_template(__class__.REGISTER_EMAIL_TEMPLATE).render(context)
+            context = {
+                'user': user,
+            }
 
-        # Sending the email
-        __class__.send_email(subject, message, to, from_email)
+            # Preparing the email
+            subject = "Welcome to Makethejobs"
+            to = [user.email]
+            from_email = WEBSITE_EMAILS['general']
+            message = get_template(__class__.REGISTER_EMAIL_TEMPLATE).render(context)
+
+            # Sending the email
+            __class__.send_email(subject, message, to, from_email)
 
     @staticmethod
     def password_email(user: User, link: str) -> None:
@@ -56,16 +58,18 @@ class EmailManager(object):
         :return: None
         """
 
-        context = {
-            'user': user,
-            'link': link
-        }
+        if EMAIL_SYSTEM_IS_ACTIVE:
 
-        # Preparing the email
-        subject = "Makethejobs password recovery"
-        to = [user.email]
-        from_email = WEBSITE_EMAILS['general']
-        message = get_template(__class__.RECOVER_PASSWORD_EMAIL_TEMPLATE).render(context)
+            context = {
+                'user': user,
+                'link': link
+            }
 
-        # Sending the email
-        __class__.send_email(subject, message, to, from_email)
+            # Preparing the email
+            subject = "Makethejobs password recovery"
+            to = [user.email]
+            from_email = WEBSITE_EMAILS['general']
+            message = get_template(__class__.RECOVER_PASSWORD_EMAIL_TEMPLATE).render(context)
+
+            # Sending the email
+            __class__.send_email(subject, message, to, from_email)

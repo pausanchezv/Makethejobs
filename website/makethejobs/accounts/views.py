@@ -28,14 +28,17 @@ class CustomAuth(View):
         """
         username = username.strip()
 
+        # Username cannot be empty
         if username == '':
             context['error_username'] = 'Username cannot be empty'
             return False
 
+        # Username cannot starts with a number
         elif username[0].isnumeric():
             context['error_username'] = 'Username cannot start with a number'
             return False
 
+        # Username should be alphanumeric without blank spaces
         elif username.isalnum():
 
             try:
@@ -59,17 +62,17 @@ class CustomAuth(View):
         """
         email = email.strip()
 
+        # Email cannot be empty
         if email == '':
             context['error_email'] = 'Email cannot be empty'
             return False
 
+        # Email should have email format
         try:
             validate_email(email)
-
         except ValidationError:
             context['error_email'] = 'This is not an email'
             return False
-
         else:
             try:
                 User.objects.get(email=email)
@@ -91,18 +94,22 @@ class CustomAuth(View):
         """
         password1 = password1.strip()
 
+        # Password cannot be empty
         if len(password1) < 1:
             context['error_password1'] = 'Password cannot be empty'
             return False
 
+        # Password should have at least 6 characters
         if len(password1) < 6:
             context['error_password1'] = 'Password should have at least 6 characters'
             return False
 
+        # Password cannot be empty
         if len(password2) < 1:
             context['error_password2'] = 'Password cannot be empty'
             return False
 
+        # Both passwords should be equals
         if password1 != password2:
             context['error_password2'] = 'These passwords are not equals'
             return False
@@ -120,7 +127,7 @@ class Login(CustomAuth):
         """
         Return template render when accessing via GET
         """
-        return render(self.request, Login.template_name)
+        return render(self.request, __class__.template_name)
 
     def post(self, request, *args, **kwargs):
         """
@@ -136,11 +143,11 @@ class Login(CustomAuth):
 
         if user is not None and user.is_active:
             login(self.request, user)
-            return HttpResponseRedirect(reverse(Login.success_url))
+            return HttpResponseRedirect(reverse(__class__.success_url))
 
         context['login_error'] = 'These login credentials are not valid'
 
-        return render(self.request, Login.template_name, context)
+        return render(self.request, __class__.template_name, context)
 
 
 class Register(CustomAuth):
@@ -153,7 +160,7 @@ class Register(CustomAuth):
         """
         Return template render when accessing via GET
         """
-        return render(self.request, Register.template_name)
+        return render(self.request, __class__.template_name)
 
     def post(self, request, *args, **kwargs):
         """
@@ -174,7 +181,7 @@ class Register(CustomAuth):
         if username and email and raw_password:
             return self.register(username, email, raw_password)
 
-        return render(self.request, Register.template_name, context)
+        return render(self.request, __class__.template_name, context)
 
     def register(self, username: str, email: str, password: str) -> HttpResponseRedirect:
         """
@@ -225,7 +232,7 @@ class ChangePassword(CustomAuth):
         """
         Return template render when accessing via GET
         """
-        return render(self.request, ChangePassword.template_name)
+        return render(self.request, __class__.template_name)
 
     def post(self, request, *args, **kwargs):
         """
@@ -259,12 +266,12 @@ class ChangePassword(CustomAuth):
                 if raw_password:
                     user.set_password(raw_password)
                     user.save()
-                    return HttpResponseRedirect(reverse(ChangePassword.success_url) + '?password-changed=1')
+                    return HttpResponseRedirect(reverse(__class__.success_url) + '?password-changed=1')
 
             else:
                 context['error_password0'] = 'Incorrect current password'
 
-        return render(self.request, ChangePassword.template_name, context)
+        return render(self.request, __class__.template_name, context)
 
 
 class ResetPassword(CustomAuth):
@@ -282,7 +289,7 @@ class ResetPassword(CustomAuth):
         public_token = self.request.GET.get('public_token', '')
 
         # Not found is the are token errors
-        if len(public_token) != ResetPassword.TOKEN_LENGTH:
+        if len(public_token) != __class__.TOKEN_LENGTH:
             return HttpResponseNotFound('<h1>Page not found</h1>')
 
         # Get tokens
@@ -291,7 +298,7 @@ class ResetPassword(CustomAuth):
         except ValueError:
             return HttpResponseNotFound('<h1>Page not found</h1>')
 
-        return render(self.request, ResetPassword.template_name)
+        return render(self.request, __class__.template_name)
 
     def post(self, request, *args, **kwargs):
         """
@@ -321,7 +328,7 @@ class ResetPassword(CustomAuth):
                 user.set_password(raw_password)
                 user.password_token = ''
                 user.save()
-                return HttpResponseRedirect(reverse(ResetPassword.success_url) + '?password-changed=1')
+                return HttpResponseRedirect(reverse(__class__.success_url) + '?password-changed=1')
 
         # Always not found by default
         return render(self.request, ResetPassword.template_name, context)
@@ -338,7 +345,7 @@ class ForgottenPassword(CustomAuth):
         """
         Return template render when accessing via GET
         """
-        return render(self.request, ForgottenPassword.template_name)
+        return render(self.request, __class__.template_name)
 
     def post(self, request, *args, **kwargs):
         """
@@ -359,9 +366,9 @@ class ForgottenPassword(CustomAuth):
 
             else:
                 self.send_password_link(user)
-                return HttpResponseRedirect(reverse(ForgottenPassword.success_url) + '?password-link-sent=1')
+                return HttpResponseRedirect(reverse(__class__.success_url) + '?password-link-sent=1')
 
-        return render(self.request, ForgottenPassword.template_name, context)
+        return render(self.request, __class__.template_name, context)
 
     @staticmethod
     def send_password_link(user: User) -> None:
@@ -371,7 +378,7 @@ class ForgottenPassword(CustomAuth):
         :return:
         """
         public_token = (''.join(random.choice(string.ascii_letters + string.digits)
-                                for _ in range(ForgottenPassword.TOKEN_LENGTH)))
+                                for _ in range(__class__.TOKEN_LENGTH)))
 
         # Adding user token
         user.password_token = public_token
